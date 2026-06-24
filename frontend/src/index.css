@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-tertiary: var(--bg-tertiary);
+  
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  
+  --color-border-primary: var(--border-primary);
+  --color-border-focus: var(--border-focus);
+}
+
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  --primary: #4f46e5;       /* indigo-600 */
+  --primary-hover: #4338ca; /* indigo-700 */
+  --primary-soft: #eef2ff;  /* indigo-50 */
+  
+  --bg-primary: #f8fafc;     /* slate-50 */
+  --bg-secondary: #ffffff;   /* white */
+  --bg-tertiary: #f1f5f9;    /* slate-100 */
+  
+  --text-primary: #0f172a;   /* slate-900 */
+  --text-secondary: #334155; /* slate-800 */
+  --text-muted: #64748b;     /* slate-500 */
+  
+  --border-primary: #0f172a; /* high-contrast dark border (like black) for bold aesthetics */
+  --border-focus: #4f46e5;   /* indigo-600 focus */
+}
+
+.dark {
+  --primary: #38BDF8;
+  --primary-hover: #7DD3FC;
+  --primary-soft: rgba(56, 189, 248, 0.1);
+  
+  --bg-primary: #0B0F1A;
+  --bg-secondary: #111827;
+  --bg-tertiary: #0F172A;
+  
+  --text-primary: #FFFFFF;
+  --text-secondary: #D1D5DB;
+  --text-muted: #9CA3AF;
+  
+  --border-primary: #1F2937;
+  --border-focus: #38BDF8;
+}
+
+/* Custom Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
