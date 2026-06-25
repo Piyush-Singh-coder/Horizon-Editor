@@ -18,11 +18,8 @@ type Config struct {
 	MongoTimeoutSeconds int
 	JWTSecret           string
 	JWTExpireHours      int
-	SMTPHost            string
-	SMTPPort            int
-	SMTPUser            string
-	SMTPPass            string
-	SMTPFrom            string
+	ResendAPIKey        string
+	ResendFromEmail     string
 	Judge0APIKey        string
 	Judge0APIHost       string
 	FirebaseProjectID   string
@@ -45,11 +42,8 @@ func LoadConfig() *Config {
 		MongoTimeoutSeconds: getEnvAsInt("MONGO_TIMEOUT_SECONDS", 10),
 		JWTSecret:           getEnv("JWT_SECRET", "your-secret-key"),
 		JWTExpireHours:      getEnvAsInt("JWT_EXPIRY_HOURS", 24),
-		SMTPHost:            getEnv("SMTP_HOST", "smtp.example.com"),
-		SMTPPort:            getEnvAsInt("SMTP_PORT", 587),
-		SMTPUser:            getEnv("SMTP_USER", "user@example.com"),
-		SMTPPass:            getEnv("SMTP_PASS", "password"),
-		SMTPFrom:            getEnv("SMTP_FROM", "no-reply@myapp.com"),
+		ResendAPIKey:        getEnv("RESEND_API_KEY", ""),
+		ResendFromEmail:     getEnv("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
 		Judge0APIKey:        getEnv("JUDGE0_API_KEY", ""),
 		Judge0APIHost:       getEnv("JUDGE0_API_HOST", "judge0-ce.p.rapidapi.com"),
 		FirebaseProjectID:   getEnv("FIREBASE_PROJECT_ID", ""),

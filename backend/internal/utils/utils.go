@@ -1,10 +1,11 @@
 package utils
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/smtp"
+	"net/http"
 	"strings"
 	"time"
 
@@ -45,27 +46,62 @@ func GenerateToken(c *fiber.Ctx, userID string, cfg *config.Config) (string, err
 	return tokenString, nil
 }
 
-// SendVerificationEmail sends an email to the user with a verification token.
+// SendVerificationEmail sends an email to the user with a verification token using the Resend API.
 func SendVerificationEmail(email, fullName, token string, cfg *config.Config) error {
-	auth := smtp.PlainAuth("", cfg.SMTPUser, cfg.SMTPPass, cfg.SMTPHost)
-
-	to := []string{email}
-	msg := []byte("To: " + email + "\r\n" +
-		"From: \"Horizon Editor\" <" + cfg.SMTPFrom + ">\r\n" +
-		"Subject: Email Verification\r\n" +
-		"MIME-version: 1.0;\r\n" +
-		"Content-Type: text/html; charset=\"UTF-8\";\r\n\r\n" +
-		"<h1>Welcome to Horizon Editor!</h1>\r\n" +
-		"<p>Please verify your email by clicking the link below:</p>\r\n" +
-		"<a href=\"" + cfg.FrontendURL + "/verify/" + token + "\">Verify Email</a>\r\n" +
-		"<p>This link will expire in 48 hours.</p>\r\n" +
-		"<h3>Thank you!</h3>\r\n")
-
-	addr := fmt.Sprintf("%s:%d", cfg.SMTPHost, cfg.SMTPPort)
-	err := smtp.SendMail(addr, auth, cfg.SMTPFrom, to, msg)
-	if err != nil {
-		return fmt.Errorf("failed to send verification email: %w", err)
+	if cfg.ResendAPIKey == "" {
+		return fmt.Errorf("resend API key is not configured")
 	}
+
+	htmlContent := fmt.Sprintf(
+		"<h1>Welcome to Horizon Editor!</h1>\r\n"+
+			"<p>Hello %s,</p>\r\n"+
+			"<p>Please verify your email by clicking the link below:</p>\r\n"+
+			"<a href=\"%s/verify/%s\">Verify Email</a>\r\n"+
+			"<p>This link will expire in 48 hours.</p>\r\n"+
+			"<h3>Thank you!</h3>\r\n",
+		fullName, cfg.FrontendURL, token,
+	)
+
+	payload := struct {
+		From    string   `json:"from"`
+		To      []string `json:"to"`
+		Subject string   `json:"subject"`
+		HTML    string   `json:"html"`
+	}{
+		From:    cfg.ResendFromEmail,
+		To:      []string{email},
+		Subject: "Email Verification - Horizon Editor",
+		HTML:    htmlContent,
+	}
+
+	jsonBytes, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal resend payload: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", "https://api.resend.com/emails", bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		return fmt.Errorf("failed to create http request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+cfg.ResendAPIKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute HTTP request to Resend API: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		var responseErr map[string]interface{}
+		if err := json.NewDecoder(resp.Body).Decode(&responseErr); err == nil {
+			return fmt.Errorf("resend API error (status %d): %v", resp.StatusCode, responseErr)
+		}
+		return fmt.Errorf("resend API returned status code %d", resp.StatusCode)
+	}
+
 	return nil
 }
 
