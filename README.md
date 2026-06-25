@@ -1,5 +1,7 @@
 # Horizon - Online Code Editor & Compiler
 
+> Migrated the backend from Node.js to Go, improving performance, reducing memory usage, and enhancing concurrency using Go's goroutines.
+
 Horizon is a premium online code editor and execution sandbox built for developers. It supports editing and running multiple programming languages, saving code execution history, and sharing code snippets with a community library.
 
 ---
