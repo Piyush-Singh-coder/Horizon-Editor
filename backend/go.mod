@@ -1,6 +1,6 @@
 module github.com/Piyush-Singh-coder/horizon-golang
 
-go 1.26.1
+go 1.25.8
 
 require (
 	firebase.google.com/go/v4 v4.20.0
