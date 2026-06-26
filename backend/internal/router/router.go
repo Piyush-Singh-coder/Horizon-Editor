@@ -26,6 +26,14 @@ func SetupRoutes(
 		AllowCredentials: true,
 	}))
 
+	// Health Check Route (For uptime monitors to prevent Render sleep)
+	app.Get("/api/health", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"status":  "ok",
+			"message": "Horizon Go backend is awake and running",
+		})
+	})
+
 	protect := middleware.Protect(db, cfg)
 
 	// Auth Routes
