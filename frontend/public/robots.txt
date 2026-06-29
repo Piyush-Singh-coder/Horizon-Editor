@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /profile
+Disallow: /snippets
+
+Sitemap: https://horizon-editor.vercel.app/sitemap.xml
