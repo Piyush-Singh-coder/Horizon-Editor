@@ -11,6 +11,7 @@ import SnippetPage from "./pages/SnippetPage";
 import SnippetDetailPage from "./pages/SnippetDetailPage";
 import ProfilePage from "./pages/ProfilePage";
 import RateLimitPage from "./pages/RateLimitPage";
+import LandingPage from "./pages/LandingPage";
 import Navbar from "./components/Navbar";
 import { Toaster } from "react-hot-toast";
 import Footer from "./components/Footer";
@@ -35,7 +36,8 @@ const App = () => {
       <Navbar />
 
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/editor" element={<HomePage />} />
         <Route
           path="/verify-email"
           element={
@@ -43,7 +45,7 @@ const App = () => {
               !user.isVerified ? (
                 <VerifyEmailPage />
               ) : (
-                <Navigate to="/" />
+                <Navigate to="/editor" />
               )
             ) : (
               <Navigate to="/login" />
@@ -53,11 +55,11 @@ const App = () => {
         <Route path="/verify/:token" element={<EmailVerificationPage />} />
         <Route
           path="/login"
-          element={!user ? <LoginPage /> : <Navigate to="/" />}
+          element={!user ? <LoginPage /> : <Navigate to="/editor" />}
         />
         <Route
           path="/register"
-          element={!user ? <SignupPage /> : <Navigate to="/" />}
+          element={!user ? <SignupPage /> : <Navigate to="/editor" />}
         />
         <Route
           path="/snippets"

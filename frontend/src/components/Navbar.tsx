@@ -21,9 +21,9 @@ const Navbar = () => {
           className="flex items-center gap-3 group relative no-underline select-none"
         >
           <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 to-indigo-500/20 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-500 blur-xl"></div>
-          <div className="relative bg-bg-tertiary p-2 rounded-xl border border-border-primary group-hover:border-primary/50 transition-all shadow-md">
-            <div className="w-6 h-6 flex items-center justify-center text-primary">
-              <Code2 className="w-6 h-6 text-primary group-hover:scale-110 transition-transform duration-300" />
+          <div className="relative bg-bg-tertiary p-1.5 rounded-xl border border-border-primary group-hover:border-primary/50 transition-all shadow-md">
+            <div className="w-7 h-7 flex items-center justify-center">
+              <img src="/logo1.png" alt="Horizon Logo" className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(79,70,229,0.5)]" />
             </div>
           </div>
           <div className="relative flex flex-col">
@@ -38,6 +38,19 @@ const Navbar = () => {
 
         {/* ---- DESKTOP LINKS ---- */}
         <div className="hidden md:flex items-center gap-6">
+          <Link
+            to="/editor"
+            className={`text-sm font-medium transition-all duration-200 relative py-1 ${
+              isActive("/editor")
+                ? "text-primary"
+                : "text-text-secondary hover:text-text-primary"
+            }`}
+          >
+            Editor
+            {isActive("/editor") && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full animate-in fade-in slide-in-from-bottom-1 duration-200" />
+            )}
+          </Link>
           <Link
             to="/snippets"
             className={`text-sm font-medium transition-all duration-200 relative py-1 ${
@@ -147,6 +160,17 @@ const Navbar = () => {
         <div className="md:hidden absolute w-full left-0 bg-bg-secondary/95 backdrop-blur-xl border-b border-border-primary shadow-xl animate-in slide-in-from-top-2 duration-200 z-40">
           <div className="p-5 flex flex-col gap-4">
             <nav className="flex flex-col gap-2">
+              <Link
+                to="/editor"
+                className={`flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                  isActive("/editor")
+                    ? "bg-primary-soft text-primary"
+                    : "text-text-secondary hover:bg-bg-tertiary"
+                }`}
+                onClick={() => setMenuOpen(false)}
+              >
+                Editor
+              </Link>
               <Link
                 to="/snippets"
                 className={`flex items-center px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
