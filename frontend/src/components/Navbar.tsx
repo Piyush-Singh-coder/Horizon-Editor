@@ -1,4 +1,4 @@
-import { Menu, X, Sun, Moon, LogOut, Code2, User } from "lucide-react";
+import { Menu, X, Sun, Moon, LogOut, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { useAuthStore } from "../store/authStore";

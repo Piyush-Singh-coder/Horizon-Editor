@@ -17,7 +17,7 @@ import { Toaster } from "react-hot-toast";
 import Footer from "./components/Footer";
 
 const App = () => {
-  const { checkAuth, isCheckingAuth, user } = useAuthStore();
+  const { checkAuth, user } = useAuthStore();
   const { theme } = useThemeStore();
   useEffect(() => {
     checkAuth();
