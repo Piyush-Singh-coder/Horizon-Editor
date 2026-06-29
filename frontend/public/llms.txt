@@ -1,0 +1,22 @@
+# Horizon Code Editor
+
+Horizon is a lightning-fast, web-based code editor and execution sandbox built for modern developers.
+
+## Key Features
+- **Instant Execution:** Uses the Piston v2 execution engine to compile and run code with zero latency.
+- **Supported Languages:** Over 10+ programming languages including Python, JavaScript, TypeScript, Go, C++, Java, Rust, Ruby, PHP, and Swift.
+- **Snippets & Sharing:** Securely save your code snippets to the cloud and generate public links for instant sharing with recruiters or teammates.
+- **Optimistic UI:** Zero loading screens. Start typing code instantly while the background execution server warms up.
+- **Editor Engine:** Powered by the legendary Monaco Editor for enterprise-grade syntax highlighting.
+
+## Tech Stack
+- Frontend: React, TypeScript, Tailwind CSS, Zustand, Vite
+- Backend: Golang, Fiber, MongoDB
+- Execution Engine: Piston API
+
+## Structure
+- Landing Page: `/`
+- Main Editor Workspace: `/editor`
+- User Authentication: Firebase Auth + JWT
+
+Users can access and try the platform directly at https://horizon-editor.vercel.app/.
