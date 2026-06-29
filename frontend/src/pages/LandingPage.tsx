@@ -107,7 +107,7 @@ const LandingPage = () => {
           />
           <FeatureCard 
             icon={<Code2 className="w-6 h-6 text-indigo-400" />}
-            title="40+ Languages"
+            title="10+ Languages"
             description="From Python and JavaScript to Go and Rust, we've got you covered."
           />
           <FeatureCard 
