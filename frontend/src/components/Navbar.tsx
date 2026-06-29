@@ -5,7 +5,7 @@ import { useAuthStore } from "../store/authStore";
 import { useThemeStore } from "../store/themeStore";
 
 const Navbar = () => {
-  const { user, logout } = useAuthStore();
+  const { user, isCheckingAuth, logout } = useAuthStore();
   const { theme, toggleTheme } = useThemeStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
@@ -85,7 +85,11 @@ const Navbar = () => {
             </div>
           </button>
 
-          {user ? (
+          {isCheckingAuth ? (
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : user ? (
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-bg-tertiary border border-border-primary">
                 <User className="w-4 h-4 text-text-muted" />
@@ -154,7 +158,11 @@ const Navbar = () => {
               >
                 Snippets
               </Link>
-              {user ? (
+              {isCheckingAuth ? (
+                <div className="flex items-center justify-center py-3">
+                  <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : user ? (
                 <>
                   <Link
                     to="/profile"

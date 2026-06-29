@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/authStore";
 import { useThemeStore } from "./store/themeStore";
@@ -18,12 +18,8 @@ import Footer from "./components/Footer";
 const App = () => {
   const { checkAuth, isCheckingAuth, user } = useAuthStore();
   const { theme } = useThemeStore();
-  const [showColdStartMsg, setShowColdStartMsg] = useState(false);
-
   useEffect(() => {
     checkAuth();
-    const timer = setTimeout(() => setShowColdStartMsg(true), 3000);
-    return () => clearTimeout(timer);
   }, [checkAuth]);
 
   useEffect(() => {
@@ -33,24 +29,6 @@ const App = () => {
       document.documentElement.classList.remove("dark");
     }
   }, [theme]);
-
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-bg-primary text-text-primary gap-4 p-4 text-center">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        {showColdStartMsg && (
-          <div className="animate-pulse space-y-1 max-w-sm">
-            <p className="text-sm font-medium text-text-primary">
-              🚀 Warming up backend server...
-            </p>
-            <p className="text-xs text-text-secondary">
-              (Free-tier cloud containers sleep when idle and take ~30-50s to wake up)
-            </p>
-          </div>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-bg-primary font-sans text-text-primary transition-colors duration-300">
