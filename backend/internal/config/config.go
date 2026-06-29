@@ -20,8 +20,8 @@ type Config struct {
 	JWTExpireHours      int
 	ResendAPIKey        string
 	ResendFromEmail     string
-	Judge0APIKey        string
-	Judge0APIHost       string
+	PistonAPIURL        string
+	PistonAPIKey        string
 	FirebaseProjectID   string
 	FirebaseClientEmail string
 	FirebasePrivateKey  string
@@ -44,8 +44,8 @@ func LoadConfig() *Config {
 		JWTExpireHours:      getEnvAsInt("JWT_EXPIRY_HOURS", 24),
 		ResendAPIKey:        getEnv("RESEND_API_KEY", ""),
 		ResendFromEmail:     getEnv("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
-		Judge0APIKey:        getEnv("JUDGE0_API_KEY", ""),
-		Judge0APIHost:       getEnv("JUDGE0_API_HOST", "judge0-ce.p.rapidapi.com"),
+		PistonAPIURL:        getEnv("PISTON_API_URL", "https://emkc.org/api/v2/piston"),
+		PistonAPIKey:        getEnv("PISTON_API_KEY", ""),
 		FirebaseProjectID:   getEnv("FIREBASE_PROJECT_ID", ""),
 		FirebaseClientEmail: getEnv("FIREBASE_CLIENT_EMAIL", ""),
 		FirebasePrivateKey:  getEnv("FIREBASE_PRIVATE_KEY", ""),

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import toast from "react-hot-toast";
 import EditorPanel from "../components/EditorPanel";
 import OutputPanel from "../components/OutputPanel";
 import HistorySidebar from "../components/HistorySidebar";
@@ -37,6 +38,14 @@ const HomePage = () => {
       localStorage.removeItem(`editor-code-${language}`);
       window.location.reload(); // Simple refresh for now or just reset value
     }
+  };
+
+  const handleAction = (action: () => void) => {
+    if (!user) {
+      toast.error("Please log in to use this feature");
+      return;
+    }
+    action();
   };
 
   return (
@@ -85,27 +94,23 @@ const HomePage = () => {
                 </span>
               </div>
 
-              {user && (
-                <>
-                  <button
-                    onClick={() => setIsSaveDialogOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-primary/60 hover:border-border-primary bg-bg-secondary hover:bg-bg-tertiary text-text-secondary hover:text-text-primary transition-all duration-200 text-xs font-semibold cursor-pointer"
-                  >
-                    <SaveIcon className="w-3.5 h-3.5" />
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setIsShareDialogOpen(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary transition-all duration-200 text-xs font-semibold cursor-pointer"
-                  >
-                    <ShareIcon className="w-3.5 h-3.5" />
-                    Share
-                  </button>
-                </>
-              )}
+              <button
+                onClick={() => handleAction(() => setIsSaveDialogOpen(true))}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border-primary/60 hover:border-border-primary bg-bg-secondary hover:bg-bg-tertiary text-text-secondary hover:text-text-primary transition-all duration-200 text-xs font-semibold cursor-pointer"
+              >
+                <SaveIcon className="w-3.5 h-3.5" />
+                Save
+              </button>
+              <button
+                onClick={() => handleAction(() => setIsShareDialogOpen(true))}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary transition-all duration-200 text-xs font-semibold cursor-pointer"
+              >
+                <ShareIcon className="w-3.5 h-3.5" />
+                Share
+              </button>
 
               <button
-                onClick={runCode}
+                onClick={() => handleAction(runCode)}
                 disabled={isRunning}
                 className="flex items-center gap-2 px-5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white transition-all duration-200 text-xs font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
               >

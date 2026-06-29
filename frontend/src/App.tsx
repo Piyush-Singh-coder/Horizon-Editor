@@ -57,20 +57,7 @@ const App = () => {
       <Navbar />
 
       <Routes>
-        <Route
-          path="/"
-          element={
-            user ? (
-              user.isVerified ? (
-                <HomePage />
-              ) : (
-                <Navigate to="/verify-email" />
-              )
-            ) : (
-              <Navigate to="/login" />
-            )
-          }
-        />
+        <Route path="/" element={<HomePage />} />
         <Route
           path="/verify-email"
           element={

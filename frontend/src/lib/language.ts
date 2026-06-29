@@ -3,7 +3,7 @@ export const LANGUAGE_CONFIG = {
     id: "javascript",
     label: "JavaScript",
     logoPath: "/javascript.png",
-    judge0Id: 93, // JavaScript (Node.js 18.15.0)
+    pistonLanguage: "javascript",
     monacoLanguage: "javascript",
     defaultCode: `// JavaScript Boilerplate
 // Start writing your logic below
@@ -19,7 +19,7 @@ main();`,
     id: "typescript",
     label: "TypeScript",
     logoPath: "/typescript.png",
-    judge0Id: 94, // TypeScript (5.0.3)
+    pistonLanguage: "typescript",
     monacoLanguage: "typescript",
     defaultCode: `// TypeScript Boilerplate
 // Start writing your logic below
@@ -35,7 +35,7 @@ main();`,
     id: "python",
     label: "Python",
     logoPath: "/python.png",
-    judge0Id: 92, // Python (3.11.2)
+    pistonLanguage: "python",
     monacoLanguage: "python",
     defaultCode: `# Python Boilerplate
 # Start writing your logic below
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     id: "java",
     label: "Java",
     logoPath: "/java.png",
-    judge0Id: 91, // Java (JDK 17.0.6)
+    pistonLanguage: "java",
     monacoLanguage: "java",
     defaultCode: `public class Main {
 
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     id: "go",
     label: "Go",
     logoPath: "/go.png",
-    judge0Id: 95, // Go (1.18.5)
+    pistonLanguage: "go",
     monacoLanguage: "go",
     defaultCode: `package main
 
@@ -83,7 +83,7 @@ func main() {
     id: "rust",
     label: "Rust",
     logoPath: "/rust.png",
-    judge0Id: 73, // Rust (1.40.0)
+    pistonLanguage: "rust",
     monacoLanguage: "rust",
     defaultCode: `fn main() {
     // Start writing your logic here
@@ -94,7 +94,7 @@ func main() {
     id: "cpp",
     label: "C++",
     logoPath: "/cpp.png",
-    judge0Id: 54, // C++ (GCC 9.2.0)
+    pistonLanguage: "c++",
     monacoLanguage: "cpp",
     defaultCode: `#include <iostream>
 
@@ -108,7 +108,7 @@ int main() {
     id: "csharp",
     label: "C#",
     logoPath: "/csharp.png",
-    judge0Id: 51, // C# (Mono 6.6.0.161)
+    pistonLanguage: "csharp",
     monacoLanguage: "csharp",
     defaultCode: `using System;
 
@@ -125,7 +125,7 @@ class Program
     id: "ruby",
     label: "Ruby",
     logoPath: "/ruby.png",
-    judge0Id: 72, // Ruby (2.7.0)
+    pistonLanguage: "ruby",
     monacoLanguage: "ruby",
     defaultCode: `# Ruby Boilerplate
 # Start writing your logic below
@@ -141,7 +141,7 @@ main`,
     id: "swift",
     label: "Swift",
     logoPath: "/swift.png",
-    judge0Id: 83, // Swift (5.2.3)
+    pistonLanguage: "swift",
     monacoLanguage: "swift",
     defaultCode: `// Swift Boilerplate
 // Start writing your logic below

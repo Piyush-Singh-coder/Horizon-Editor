@@ -78,11 +78,11 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
       try {
         const languageConfig =
           LANGUAGE_CONFIG[language as keyof typeof LANGUAGE_CONFIG];
-        const languageId = languageConfig.judge0Id;
+        const pistonLanguage = languageConfig.pistonLanguage;
         const sourceCode = editor ? editor.getValue() : code;
 
         const response = await axiosInstance.post("/execution/execute", {
-          languageId,
+          language: pistonLanguage,
           code: sourceCode,
         });
 
