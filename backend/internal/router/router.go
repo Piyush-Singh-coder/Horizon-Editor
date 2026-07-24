@@ -20,14 +20,11 @@ func SetupRoutes(
 	snippetHandler *handler.SnippetHandler,
 	executionHandler *handler.ExecutionHandler,
 ) {
-	allowOrigins := cfg.FrontendURL
-	if allowOrigins == "" || allowOrigins == "*" {
-		allowOrigins = "http://localhost:5173, http://localhost:3000"
-	}
-
-	// Enable CORS matching original Node.js config
+	// Dynamic CORS origin matching allowing credentials for Amplify, Vercel, Localhost, etc.
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     allowOrigins,
+		AllowOriginsFunc: func(origin string) bool {
+			return true
+		},
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, Cookie",
 		AllowMethods:     "GET, POST, HEAD, PUT, DELETE, PATCH, OPTIONS",
 		AllowCredentials: true,
