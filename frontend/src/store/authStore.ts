@@ -10,6 +10,7 @@ export interface User {
   _id: string;
   fullName: string;
   email: string;
+  avatarUrl?: string;
   isVerified: boolean;
   createdAt?: string;
 }
@@ -30,6 +31,7 @@ interface AuthState {
   isLoggingIn: boolean;
   isSigningUp: boolean;
   isCheckingAuth: boolean;
+  isUploadingAvatar: boolean;
   error: string | null;
 
   signup: (data: SignupData) => Promise<void>;
@@ -38,6 +40,7 @@ interface AuthState {
   googleLogin: () => Promise<void>;
   verifyEmail: (token: string) => Promise<void>;
   checkAuth: () => Promise<void>;
+  uploadAvatar: (file: File) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -45,6 +48,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoggingIn: false,
   isSigningUp: false,
   isCheckingAuth: true,
+  isUploadingAvatar: false,
   error: null,
 
   signup: async (data) => {
@@ -160,6 +164,33 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error: unknown) {
       console.log("Error in checkAuth", error);
       set({ isCheckingAuth: false, user: null });
+    }
+  },
+
+  uploadAvatar: async (file: File) => {
+    set({ isUploadingAvatar: true });
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const response = await axiosInstance.post("/auth/profile/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      set((state) => ({
+        user: state.user ? { ...state.user, avatarUrl: response.data.avatarUrl } : null,
+        isUploadingAvatar: false,
+      }));
+      toast.success("Profile picture updated!");
+    } catch (error: unknown) {
+      console.error("Error uploading avatar", error);
+      let errorMessage = "Failed to upload profile picture";
+      if (error instanceof AxiosError && error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      set({ isUploadingAvatar: false });
+      toast.error(errorMessage);
+      throw error;
     }
   },
 }));

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -13,21 +12,22 @@ import (
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/config"
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/database"
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/model"
+	"github.com/Piyush-Singh-coder/horizon-golang/internal/repository"
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type ExecutionHandler struct {
-	DB  *database.DBClient
-	Cfg *config.Config
+	DB            *database.DBClient
+	Cfg           *config.Config
+	ExecutionRepo *repository.ExecutionRepository
 }
 
-func NewExecutionHandler(db *database.DBClient, cfg *config.Config) *ExecutionHandler {
+func NewExecutionHandler(db *database.DBClient, cfg *config.Config, execRepo *repository.ExecutionRepository) *ExecutionHandler {
 	return &ExecutionHandler{
-		DB:  db,
-		Cfg: cfg,
+		DB:            db,
+		Cfg:           cfg,
+		ExecutionRepo: execRepo,
 	}
 }
 
@@ -190,7 +190,7 @@ func (h *ExecutionHandler) SaveExecution(c *fiber.Ctx) error {
 		UpdatedAt: time.Now(),
 	}
 
-	_, err := h.DB.Collection("executions").InsertOne(ctx, execution)
+	err := h.ExecutionRepo.SaveExecution(ctx, &execution)
 	if err != nil {
 		slog.Error("failed to save execution to db", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error"})
@@ -209,18 +209,9 @@ func (h *ExecutionHandler) GetExecutions(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Sort by createdAt descending
-	findOpts := options.Find().SetSort(bson.M{"createdAt": -1})
-	cursor, err := h.DB.Collection("executions").Find(ctx, bson.M{"user": user.ID}, findOpts)
+	executions, err := h.ExecutionRepo.GetExecutionsByUserID(ctx, user.ID.Hex())
 	if err != nil {
 		slog.Error("failed to find executions", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error"})
-	}
-	defer cursor.Close(ctx)
-
-	var executions []model.Execution
-	if err := cursor.All(ctx, &executions); err != nil {
-		slog.Error("failed to decode executions", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error"})
 	}
 
@@ -234,22 +225,14 @@ func (h *ExecutionHandler) GetExecutions(c *fiber.Ctx) error {
 // GetExecutionById fetches a single execution details.
 func (h *ExecutionHandler) GetExecutionById(c *fiber.Ctx) error {
 	executionIDStr := c.Params("executionId")
-	executionID, err := bson.ObjectIDFromHex(executionIDStr)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid execution ID format"})
-	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	var execution model.Execution
-	err = h.DB.Collection("executions").FindOne(ctx, bson.M{"_id": executionID}).Decode(&execution)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "Execution not found"})
-		}
-		slog.Error("failed to find execution by id", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error"})
+	executionID, err := bson.ObjectIDFromHex(executionIDStr)
+	if err == nil {
+		_ = h.DB.Collection("executions").FindOne(ctx, bson.M{"_id": executionID}).Decode(&execution)
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"execution": execution})
@@ -258,22 +241,18 @@ func (h *ExecutionHandler) GetExecutionById(c *fiber.Ctx) error {
 // DeleteExecution removes an execution record.
 func (h *ExecutionHandler) DeleteExecution(c *fiber.Ctx) error {
 	executionIDStr := c.Params("executionId")
-	executionID, err := bson.ObjectIDFromHex(executionIDStr)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid execution ID format"})
+	user, ok := c.Locals("user").(model.User)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Not authorized"})
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	res, err := h.DB.Collection("executions").DeleteOne(ctx, bson.M{"_id": executionID})
+	err := h.ExecutionRepo.DeleteExecution(ctx, executionIDStr, user.ID.Hex())
 	if err != nil {
 		slog.Error("failed to delete execution", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error"})
-	}
-
-	if res.DeletedCount == 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "Execution not found"})
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Execution deleted successfully"})

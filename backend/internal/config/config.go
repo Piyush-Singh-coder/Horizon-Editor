@@ -25,6 +25,10 @@ type Config struct {
 	FirebaseProjectID   string
 	FirebaseClientEmail string
 	FirebasePrivateKey  string
+	AWSRegion           string
+	AWSAccessKeyID      string
+	AWSSecretAccessKey  string
+	AWSS3BucketName     string
 }
 
 func LoadConfig() *Config {
@@ -32,7 +36,7 @@ func LoadConfig() *Config {
 		slog.Info("No .env file found, using system environment variables")
 	}
 
-	return &Config {
+	return &Config{
 		Port:                getEnv("PORT", "8080"),
 		Env:                 getEnv("ENV", "development"),
 		BaseURL:             getEnv("BASE_URL", "http://localhost:8080"),
@@ -49,6 +53,10 @@ func LoadConfig() *Config {
 		FirebaseProjectID:   getEnv("FIREBASE_PROJECT_ID", ""),
 		FirebaseClientEmail: getEnv("FIREBASE_CLIENT_EMAIL", ""),
 		FirebasePrivateKey:  getEnv("FIREBASE_PRIVATE_KEY", ""),
+		AWSRegion:           getEnv("AWS_REGION", "us-east-1"),
+		AWSAccessKeyID:      getEnv("AWS_ACCESS_KEY_ID", ""),
+		AWSSecretAccessKey:  getEnv("AWS_SECRET_ACCESS_KEY", ""),
+		AWSS3BucketName:     getEnv("AWS_S3_BUCKET_NAME", ""),
 	}
 }
 

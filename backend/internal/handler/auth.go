@@ -11,6 +11,8 @@ import (
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/config"
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/database"
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/model"
+	"github.com/Piyush-Singh-coder/horizon-golang/internal/repository"
+	"github.com/Piyush-Singh-coder/horizon-golang/internal/service"
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -23,13 +25,17 @@ type AuthHandler struct {
 	DB           *database.DBClient
 	Cfg          *config.Config
 	FirebaseAuth *auth.Client
+	S3Service    *service.S3Service
+	UserRepo     *repository.UserRepository
 }
 
-func NewAuthHandler(db *database.DBClient, cfg *config.Config, firebaseAuth *auth.Client) *AuthHandler {
+func NewAuthHandler(db *database.DBClient, cfg *config.Config, firebaseAuth *auth.Client, s3Service *service.S3Service, userRepo *repository.UserRepository) *AuthHandler {
 	return &AuthHandler{
 		DB:           db,
 		Cfg:          cfg,
 		FirebaseAuth: firebaseAuth,
+		S3Service:    s3Service,
+		UserRepo:     userRepo,
 	}
 }
 
@@ -56,16 +62,14 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	usersCol := h.DB.Collection("users")
-
-	// Check if user already exists
-	var existingUser model.User
-	err := usersCol.FindOne(ctx, bson.M{"email": req.Email}).Decode(&existingUser)
-	if err == nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "User already exists"})
-	} else if !errors.Is(err, mongo.ErrNoDocuments) {
+	// Check if user already exists in DB (DynamoDB or MongoDB)
+	existingUser, err := h.UserRepo.GetUserByEmail(ctx, req.Email)
+	if err != nil {
 		slog.Error("error checking existing user", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error"})
+	}
+	if existingUser != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "User already exists"})
 	}
 
 	// Hash password
@@ -86,7 +90,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		UpdatedAt:    time.Now(),
 	}
 
-	_, err = usersCol.InsertOne(ctx, user)
+	err = h.UserRepo.CreateUser(ctx, &user)
 	if err != nil {
 		slog.Error("error creating user", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error"})
@@ -145,31 +149,19 @@ func (h *AuthHandler) Verify(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid token claims"})
 	}
 
-	userObjectID, err := bson.ObjectIDFromHex(userIDStr)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid user ID format"})
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	usersCol := h.DB.Collection("users")
-
-	var user model.User
-	err = usersCol.FindOne(ctx, bson.M{"_id": userObjectID}).Decode(&user)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "User not found"})
-		}
-		slog.Error("error finding user for verification", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error"})
+	user, err := h.UserRepo.GetUserByID(ctx, userIDStr)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "User not found"})
 	}
 
 	if user.IsVerified {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "User already verified"})
 	}
 
-	_, err = usersCol.UpdateOne(ctx, bson.M{"_id": userObjectID}, bson.M{"$set": bson.M{"isVerified": true, "updatedAt": time.Now()}})
+	err = h.UserRepo.VerifyUserEmail(ctx, userIDStr)
 	if err != nil {
 		slog.Error("error verifying user in DB", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error"})
@@ -276,14 +268,9 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	var user model.User
-	err := h.DB.Collection("users").FindOne(ctx, bson.M{"email": req.Email}).Decode(&user)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid credentials"})
-		}
-		slog.Error("error querying user on login", "error", err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error"})
+	user, err := h.UserRepo.GetUserByEmail(ctx, req.Email)
+	if err != nil || user == nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid credentials"})
 	}
 
 	if user.AuthProvider == "google" {
@@ -309,6 +296,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		"_id":        user.ID,
 		"fullName":   user.FullName,
 		"email":      user.Email,
+		"avatarUrl":  user.AvatarURL,
 		"isVerified": user.IsVerified,
 	})
 }
@@ -339,4 +327,52 @@ func (h *AuthHandler) GetProfile(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Not authorized"})
 	}
 	return c.Status(fiber.StatusOK).JSON(user)
+}
+
+// UploadAvatar handles uploading a user profile image to AWS S3.
+func (h *AuthHandler) UploadAvatar(c *fiber.Ctx) error {
+	user, ok := c.Locals("user").(model.User)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Not authorized"})
+	}
+
+	fileHeader, err := c.FormFile("avatar")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "No file uploaded"})
+	}
+
+	// Max 5MB file size limit
+	if fileHeader.Size > 5*1024*1024 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "File size exceeds 5MB limit"})
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Failed to read file"})
+	}
+	defer file.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	avatarURL, err := h.S3Service.UploadAvatar(ctx, user.ID.Hex(), file, fileHeader.Filename, fileHeader.Header.Get("Content-Type"))
+	if err != nil {
+		slog.Error("failed to upload avatar to S3", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": err.Error()})
+	}
+
+	// Update user avatar in DB (DynamoDB or MongoDB)
+	err = h.UserRepo.UpdateAvatar(ctx, user.ID.Hex(), avatarURL)
+	if err != nil {
+		slog.Error("failed to update user avatar in DB", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Failed to save profile picture"})
+	}
+
+	user.AvatarURL = avatarURL
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message":   "Profile picture uploaded successfully",
+		"avatarUrl": avatarURL,
+		"user":      user,
+	})
 }

@@ -12,6 +12,7 @@ type User struct {
 	Email        string        `bson:"email" json:"email"`
 	Password     string        `bson:"password,omitempty" json:"password,omitempty"`
 	AuthProvider string        `bson:"authProvider" json:"authProvider"`
+	AvatarURL    string        `bson:"avatarUrl,omitempty" json:"avatarUrl,omitempty"`
 	IsVerified   bool          `bson:"isVerified" json:"isVerified"`
 	CreatedAt    time.Time     `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	UpdatedAt    time.Time     `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`

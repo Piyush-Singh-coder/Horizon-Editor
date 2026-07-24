@@ -5,6 +5,7 @@ import (
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/database"
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/handler"
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/middleware"
+	"github.com/Piyush-Singh-coder/horizon-golang/internal/repository"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
@@ -14,6 +15,7 @@ func SetupRoutes(
 	app *fiber.App,
 	db *database.DBClient,
 	cfg *config.Config,
+	userRepo *repository.UserRepository,
 	authHandler *handler.AuthHandler,
 	snippetHandler *handler.SnippetHandler,
 	executionHandler *handler.ExecutionHandler,
@@ -34,7 +36,7 @@ func SetupRoutes(
 		})
 	})
 
-	protect := middleware.Protect(db, cfg)
+	protect := middleware.Protect(userRepo, cfg)
 
 	// Auth Routes
 	auth := app.Group("/api/auth")
@@ -44,6 +46,7 @@ func SetupRoutes(
 	auth.Post("/login", authHandler.Login)
 	auth.Post("/logout", authHandler.Logout)
 	auth.Get("/profile", protect, authHandler.GetProfile)
+	auth.Post("/profile/avatar", protect, authHandler.UploadAvatar)
 
 	// Execution Routes
 	exec := app.Group("/api/execution")

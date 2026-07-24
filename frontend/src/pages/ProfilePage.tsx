@@ -14,17 +14,8 @@ import {
   FileCode,
 } from "lucide-react";
 
-// Assuming theme is managed via data-theme on html or similar,
-// but for this specific design component logic, we can try to detect or just use DaisyUI capabilities
-// which map to the user's requested "dark/light" logic effectively if we use base-content/base-100.
-// However, the user provided specific Tailwind colors (gray-900 etc).
-// We should try to stick to DaisyUI variables to respect the "Theme Selector" feature we built.
-// The user's request said "use this to update ProfilePage", implying they like this specific visual.
-// I will adapt the structure to use DaisyUI colors that MATCH the visual intent of the provided code,
-// instead of hardcoded grays, to ensure themes still work.
-
 const ProfilePage = () => {
-  const { user } = useAuthStore();
+  const { user, uploadAvatar, isUploadingAvatar } = useAuthStore();
   const {
     executions,
     fetchExecutions,
@@ -35,6 +26,17 @@ const ProfilePage = () => {
   const { setCode, setLanguage, setOutput } = useCodeEditorStore();
   const navigate = useNavigate();
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        await uploadAvatar(file);
+      } catch (err) {
+        console.error("Avatar upload failed:", err);
+      }
+    }
+  };
+
   const handleExecutionClick = async (executionId: string) => {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,7 +46,7 @@ const ProfilePage = () => {
         setCode(execution.code);
         setLanguage(execution.language);
         setOutput(execution.output);
-        navigate("/");
+        navigate("/editor");
       }
     } catch (error) {
       console.error("Error opening execution:", error);
@@ -65,10 +67,7 @@ const ProfilePage = () => {
     );
   }
 
-  // Logic to determine display name and initials
   const displayName = user.fullName || "User Name";
-
-  // Get Initials logic
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -97,20 +96,39 @@ const ProfilePage = () => {
         <div className="bg-bg-secondary border border-border-primary shadow-2xl rounded-2xl overflow-hidden mb-10 transition-all duration-300">
           <div className="p-8 md:p-10">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
-              {/* Avatar Section with Initials */}
+              {/* Avatar Section */}
               <div className="relative group">
-                <div className="bg-primary text-white rounded-full w-28 h-28 flex items-center justify-center shadow-xl ring-4 ring-primary/10 select-none">
-                  <span className="text-4xl font-extrabold tracking-wider">
-                    {initials}
-                  </span>
+                <div className="bg-primary text-white rounded-full w-28 h-28 flex items-center justify-center shadow-xl ring-4 ring-primary/10 overflow-hidden select-none">
+                  {isUploadingAvatar ? (
+                    <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : user.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt={displayName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-4xl font-extrabold tracking-wider">
+                      {initials}
+                    </span>
+                  )}
                 </div>
-                {/* Simulated Upload Button */}
-                <button
-                  className="absolute bottom-1 right-1 bg-text-primary text-bg-primary p-2.5 rounded-full shadow-lg hover:scale-110 transition-transform cursor-not-allowed opacity-80"
-                  title="Upload not available in demo"
+                {/* Upload Button */}
+                <label
+                  htmlFor="avatar-upload"
+                  className="absolute bottom-1 right-1 bg-text-primary text-bg-primary p-2.5 rounded-full shadow-lg hover:scale-110 transition-transform cursor-pointer opacity-90 hover:opacity-100"
+                  title="Upload profile picture to S3"
                 >
                   <Camera size={14} className="text-bg-secondary" />
-                </button>
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarChange}
+                    disabled={isUploadingAvatar}
+                  />
+                </label>
               </div>
 
               {/* User Info */}

@@ -7,7 +7,9 @@ import (
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/config"
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/database"
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/handler"
+	"github.com/Piyush-Singh-coder/horizon-golang/internal/repository"
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/router"
+	"github.com/Piyush-Singh-coder/horizon-golang/internal/service"
 	"github.com/Piyush-Singh-coder/horizon-golang/internal/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -33,6 +35,20 @@ func main() {
 		}
 	}()
 
+	// Connect to AWS DynamoDB (if DB_TYPE=dynamodb or AWS credentials exist)
+	isDynamo := os.Getenv("DB_TYPE") == "dynamodb"
+	dynamoClient, err := database.ConnectDynamoDB(cfg)
+	if err != nil {
+		slog.Warn("DynamoDB connection skipped/failed. Defaulting to MongoDB", "error", err)
+		isDynamo = false
+	} else if isDynamo {
+		slog.Info("DB_TYPE=dynamodb detected. Primary database switched to AWS DynamoDB!")
+	}
+
+	// Initialize Repositories
+	userRepo := repository.NewUserRepository(dbClient, dynamoClient, isDynamo)
+	execRepo := repository.NewExecutionRepository(dbClient, dynamoClient, isDynamo)
+
 	// Initialize Firebase Auth Client
 	firebaseAuth, err := utils.InitFirebase(cfg)
 	if err != nil {
@@ -40,6 +56,9 @@ func main() {
 	} else {
 		slog.Info("Firebase Admin Client initialized successfully")
 	}
+
+	// Initialize AWS S3 Service
+	s3Service := service.NewS3Service(cfg)
 
 	// Initialize Fiber App
 	app := fiber.New(fiber.Config{
@@ -51,12 +70,12 @@ func main() {
 	app.Use(recover.New())
 
 	// Initialize Route Handlers
-	authHandler := handler.NewAuthHandler(dbClient, cfg, firebaseAuth)
+	authHandler := handler.NewAuthHandler(dbClient, cfg, firebaseAuth, s3Service, userRepo)
 	snippetHandler := handler.NewSnippetHandler(dbClient, cfg)
-	executionHandler := handler.NewExecutionHandler(dbClient, cfg)
+	executionHandler := handler.NewExecutionHandler(dbClient, cfg, execRepo)
 
 	// Set up routing
-	router.SetupRoutes(app, dbClient, cfg, authHandler, snippetHandler, executionHandler)
+	router.SetupRoutes(app, dbClient, cfg, userRepo, authHandler, snippetHandler, executionHandler)
 
 	// Start Listening
 	addr := ":" + cfg.Port

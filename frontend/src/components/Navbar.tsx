@@ -104,12 +104,23 @@ const Navbar = () => {
             </div>
           ) : user ? (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-bg-tertiary border border-border-primary">
-                <User className="w-4 h-4 text-text-muted" />
+              <Link
+                to="/profile"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-bg-tertiary border border-border-primary hover:border-primary/50 transition-all"
+              >
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.fullName || user.email}
+                    className="w-5 h-5 rounded-full object-cover"
+                  />
+                ) : (
+                  <User className="w-4 h-4 text-text-muted" />
+                )}
                 <span className="text-xs font-semibold text-text-secondary">
                   {user.fullName || user.email}
                 </span>
-              </div>
+              </Link>
               <button
                 onClick={logout}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-semibold border border-red-500/20 transition-all duration-200 hover:shadow-lg hover:shadow-red-500/5 cursor-pointer"
