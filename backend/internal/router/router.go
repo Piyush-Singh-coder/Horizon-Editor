@@ -20,9 +20,14 @@ func SetupRoutes(
 	snippetHandler *handler.SnippetHandler,
 	executionHandler *handler.ExecutionHandler,
 ) {
+	allowOrigins := cfg.FrontendURL
+	if allowOrigins == "" || allowOrigins == "*" {
+		allowOrigins = "http://localhost:5173, http://localhost:3000"
+	}
+
 	// Enable CORS matching original Node.js config
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     cfg.FrontendURL,
+		AllowOrigins:     allowOrigins,
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, Cookie",
 		AllowMethods:     "GET, POST, HEAD, PUT, DELETE, PATCH, OPTIONS",
 		AllowCredentials: true,
