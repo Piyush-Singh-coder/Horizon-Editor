@@ -31,7 +31,7 @@ func NewExecutionHandler(db *database.DBClient, cfg *config.Config) *ExecutionHa
 	}
 }
 
-// ExecuteCode runs the source code via the Piston API.
+// ExecuteCode runs the source code via the OnlineCompiler.io API.
 func (h *ExecutionHandler) ExecuteCode(c *fiber.Ctx) error {
 	type Request struct {
 		Language string `json:"language"`
@@ -47,49 +47,66 @@ func (h *ExecutionHandler) ExecuteCode(c *fiber.Ctx) error {
 	if req.Code == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "code is required"})
 	}
-	if req.Language == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "language is required"})
+	// Map Piston/Frontend language IDs to OnlineCompiler.io compiler identifiers
+	compilerMap := map[string]string{
+		"javascript": "typescript-deno",
+		"typescript": "typescript-deno",
+		"python":     "python-3.14",
+		"java":       "openjdk-25",
+		"go":         "go-1.26",
+		"rust":       "rust-1.93",
+		"c++":        "g++-15",
+		"cpp":        "g++-15",
+		"c":          "gcc-15",
+		"csharp":     "dotnet-csharp-9",
+		"php":        "php-8.5",
+		"ruby":       "ruby-4.0",
+		"haskell":    "haskell-9.12",
 	}
 
-	type PistonFile struct {
-		Content string `json:"content"`
+	ocCompiler, exists := compilerMap[req.Language]
+	if !exists {
+		ocCompiler = req.Language
 	}
 
-	// Prepare payload for Piston
-	pistonReq := map[string]any{
-		"language": req.Language,
-		"version":  "*", // Selects the latest available version
-		"files": []PistonFile{
-			{Content: req.Code},
-		},
-		"stdin": req.Input,
+	slog.Info("Sending execution request to OnlineCompiler", "original_lang", req.Language, "mapped_compiler", ocCompiler)
+
+	// Prepare payload for OnlineCompiler.io
+	ocReq := map[string]any{
+		"compiler": ocCompiler,
+		"code":     req.Code,
+		"input":    req.Input,
 	}
 
-	payloadBytes, err := json.Marshal(pistonReq)
+	payloadBytes, err := json.Marshal(ocReq)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error"})
 	}
 
-	pistonURL := h.Cfg.PistonAPIURL + "/execute"
-	if h.Cfg.PistonAPIURL == "" {
-		pistonURL = "https://emkc.org/api/v2/piston/execute"
+	// We reuse PistonAPIURL variable from config to avoid renaming env vars
+	apiURL := h.Cfg.PistonAPIURL
+	if apiURL == "" || apiURL == "https://emkc.org/api/v2/piston/execute" {
+		apiURL = "https://api.onlinecompiler.io/api/run-code-sync/"
 	}
 
-	httpReq, err := http.NewRequest("POST", pistonURL, bytes.NewBuffer(payloadBytes))
+	httpReq, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(payloadBytes))
 	if err != nil {
-		slog.Error("failed to create http request to piston", "error", err)
+		slog.Error("failed to create http request", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error"})
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
-	if h.Cfg.PistonAPIKey != "" {
-		httpReq.Header.Set("Authorization", "Bearer "+h.Cfg.PistonAPIKey) // Some self-hosted or provided keys might use this
+	
+	// API Key from config
+	apiKey := h.Cfg.PistonAPIKey 
+	if apiKey != "" {
+		httpReq.Header.Set("Authorization", apiKey)
 	}
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(httpReq)
 	if err != nil {
-		slog.Error("error communicating with piston", "error", err)
+		slog.Error("error communicating with execution api", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Failed to communicate with execution server"})
 	}
 	defer resp.Body.Close()
@@ -104,44 +121,34 @@ func (h *ExecutionHandler) ExecuteCode(c *fiber.Ctx) error {
 	}
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		slog.Error("piston API returned non-OK status", "status", resp.Status, "body", string(respBody))
-		return c.Status(resp.StatusCode).JSON(fiber.Map{"message": "Execution server returned error"})
+		slog.Error("API returned non-OK status", "status", resp.Status, "body", string(respBody))
+		return c.Status(resp.StatusCode).JSON(fiber.Map{"message": "Execution server returned error: " + string(respBody)})
 	}
 
-	type PistonRun struct {
-		Stdout string `json:"stdout"`
-		Stderr string `json:"stderr"`
-		Output string `json:"output"`
-		Code   int    `json:"code"`
-		Signal string `json:"signal"`
+	// Response structure from OnlineCompiler.io
+	type OnlineCompilerResponse struct {
+		Output   string `json:"output"`
+		Error    string `json:"error"`
+		Status   string `json:"status"`
+		ExitCode int    `json:"exit_code"`
 	}
 
-	type PistonResponse struct {
-		Language string    `json:"language"`
-		Version  string    `json:"version"`
-		Run      PistonRun `json:"run"`
-		Message  string    `json:"message"`
-	}
-
-	var pistonRes PistonResponse
-	if err := json.Unmarshal(respBody, &pistonRes); err != nil {
-		slog.Error("failed to parse piston response", "error", err)
+	var res OnlineCompilerResponse
+	if err := json.Unmarshal(respBody, &res); err != nil {
+		slog.Error("failed to parse response", "error", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Internal server error"})
 	}
 
-	output := pistonRes.Run.Stdout
-	errStr := pistonRes.Run.Stderr
-
 	statusDesc := "Accepted"
-	if pistonRes.Run.Code != 0 {
+	if res.ExitCode != 0 || res.Error != "" || res.Status == "error" {
 		statusDesc = "Error"
 	}
 
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"output":   output,
-		"error":    errStr,
+		"output":   res.Output,
+		"error":    res.Error,
 		"status":   statusDesc,
-		"exitCode": pistonRes.Run.Code,
+		"exitCode": res.ExitCode,
 	})
 }
 
