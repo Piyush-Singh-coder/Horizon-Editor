@@ -1,6 +1,9 @@
 # Horizon Code Editor 🚀
 ### Cloud-Native Code Execution & Collaboration Platform
 
+🌐 **Live Website:** [https://horizon-editor.vercel.app](https://horizon-editor.vercel.app)
+
+[![Live Demo](https://img.shields.io/badge/Live_Demo-horizon--editor.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://horizon-editor.vercel.app)
 [![Go Version](https://img.shields.io/badge/Go-1.22%2B-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
 [![React Version](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![AWS EC2](https://img.shields.io/badge/AWS_EC2-Ubuntu_24.04-FF9900?style=for-the-badge&logo=amazonec2&logoColor=white)](https://aws.amazon.com/ec2/)
