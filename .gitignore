@@ -51,3 +51,6 @@ C:\\Users\\pmiay\\.gemini/
 # Operating System files
 .DS_Store
 Thumbs.db
+
+horizon-key-pair.pem
+extracted_images
