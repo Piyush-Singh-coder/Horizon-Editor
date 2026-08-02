@@ -5,6 +5,7 @@ import OutputPanel from "../components/OutputPanel";
 import HistorySidebar from "../components/HistorySidebar";
 import { useCodeEditorStore } from "../store/codeEditorStore";
 import {
+  Loader2,
   PlayIcon,
   RotateCcwIcon,
   SaveIcon,
@@ -16,7 +17,6 @@ import ThemeSelector from "../components/ThemeSelector";
 import ShareSnippetDialog from "../components/ShareSnippetDialog";
 import SaveExecutionDialog from "../components/SaveExecutionDialog";
 import { useAuthStore } from "../store/authStore";
-import RunningCodeSkeleton from "../components/RunningCodeSkeleton";
 
 const HomePage = () => {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -115,7 +115,10 @@ const HomePage = () => {
                 className="flex items-center gap-2 px-5 py-2 rounded-xl bg-primary hover:bg-primary-hover text-white transition-all duration-200 text-xs font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
               >
                 {isRunning ? (
-                  <RunningCodeSkeleton />
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Running...
+                  </>
                 ) : (
                   <>
                     <PlayIcon className="w-3.5 h-3.5 fill-current" />
